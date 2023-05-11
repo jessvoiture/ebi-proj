@@ -1,5 +1,7 @@
 <script>
-    import Scatterplot from '../../components/Scatterplot.svelte';
+    import {extent} from "d3-array";
+	import {scaleLinear, scaleOrdinal} from "d3-scale";
+    
     export let data = {}
     console.log(data)
 </script>
