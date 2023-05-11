@@ -24,13 +24,13 @@
     let innerWidth = width - margin.left - margin.right;
     let innerHeight = height - margin.top - margin.bottom;
 
-    // let xExtent = extent(datapoints, (d) =>  d.length);
-    // let yExtent = extent(datapoints.map((d) => { return d.length}));
+    let xExtent = extent(datapoints, (d) =>  d.length);
+    let yExtent = extent(datapoints, (d) =>  d.nr_modifications);
 
     $: console.log(datapoints.map((d) => { return d.nr_modifications}))
 
-    let xScale = scaleLinear().domain([310, 390]).range([0,innerWidth])
-    let yScale = scaleLinear().domain([0, 5100]).range([innerHeight, 0])
+    let xScale = scaleLinear().domain(xExtent).range([0,innerWidth])
+    let yScale = scaleLinear().domain(yExtent).range([innerHeight, 0])
 
     let colorScale = scaleOrdinal()
 		.domain(["human", "mouse"])
