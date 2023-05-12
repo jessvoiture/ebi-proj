@@ -14,23 +14,30 @@
     } 
 
     const handleClick = function(point) {
-        console.log(point)
         goto(`./${point}`)
     }
 
-    let width = 600;
-    let height = 400;
+    let width = 1000;
+    let height = 600;
+
     const margin = {top: 30, left: 30, right: 30, bottom:30};
+
     let innerWidth = width - margin.left - margin.right;
     let innerHeight = height - margin.top - margin.bottom;
 
     let xExtent = extent(datapoints, (d) =>  d.length);
     let yExtent = extent(datapoints, (d) =>  d.nr_modifications);
 
-    $: console.log(datapoints.map((d) => { return d.nr_modifications}))
+    let xMax = 1.1 * xExtent[1];
+    let xMin = 0.9 * xExtent[0];
+    let xDomain = [xMin, xMax];
+    
+    let yMax = 1.1 * yExtent[1];
+    let yMin = 0.9 * yExtent[0];
+    let yDomain = [yMin, yMax];
 
-    let xScale = scaleLinear().domain(xExtent).range([0,innerWidth])
-    let yScale = scaleLinear().domain(yExtent).range([innerHeight, 0])
+    let xScale = scaleLinear().domain(xDomain).range([0,innerWidth])
+    let yScale = scaleLinear().domain(yDomain).range([innerHeight, 0])
 
     let colorScale = scaleOrdinal()
 		.domain(["human", "mouse"])
@@ -49,20 +56,21 @@
     <g class="x-axis" transform='translate({margin.left},0)'>
 		{#each xTicks as tick}
 			<g class = "tick" transform='translate({xScale(tick)}, 0)'>
-				<text y={height}>{xTickFormat(tick)}<text />
+				<text y={height}>{xTickFormat(tick)}</text>
 			</g>
 		{/each}
-        <!-- <text transform='translate({(width - margin.left) / 2}, {height})'>Length</text> -->
         <line x1=0 y1={innerHeight + margin.top} 
-              x2={innerWidth} y2={innerHeight + margin.top}
-              stroke = 'black' />
+              x2={innerWidth} y2={innerHeight + margin.top} />
 
 	</g>
 
     <g class="y-axis" transform='translate(0, {margin.top})'>
 		{#each yTicks as tick}
 			<g class = "tick" transform='translate(0, {yScale(tick)})'>
-				<text x={10}>{yTickFormat(tick)}<text />
+				<text x={10}>{yTickFormat(tick)}</text>
+                <!-- <line x1={margin.left} y1={yScale(tick)}
+                      x2={margin.left + innerWidth} y2={yScale(tick)}
+                      stroke = "black"/> -->
 			</g>
 		{/each}
         <line x1={margin.left} y1=0
@@ -77,7 +85,7 @@
 			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<circle cx={xScale(point.length)} 
                     cy={yScale(point.nr_modifications)} 
-                    r='5'
+                    r='7'
                     fill = {colorScale(point.species)}
                     class:selected="{selected_dp && point.name == selected_dp.name}"
                     on:mouseover={function(event) {selected_dp = point; setMousePosition(event)}}  
@@ -101,10 +109,12 @@
 <style>
     .y-axis, .x-axis {
         font-family: sans-serif;
+        fill: gray;
     }
 
     circle.selected {
-    fill-opacity: 1;
+        fill-opacity: 1;
+        stroke: black;
     }
 
     #tooltip {                                     
@@ -114,8 +124,18 @@
         border: solid 1px;
         font-family: sans-serif;
     }
+
     svg.tooltip {                                
         margin: 0px;
         padding: 0px;
+    }
+
+    svg {
+        display: block;
+        margin: auto;
+    }
+
+    line {
+        stroke: lightgray;
     }
 </style>
