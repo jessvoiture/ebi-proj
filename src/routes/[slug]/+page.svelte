@@ -1,5 +1,5 @@
 <script>
-	import {extent} from "d3-array";
+	import {count, extent} from "d3-array";
 	import {scaleLinear, scaleOrdinal, scaleBand} from "d3-scale";
     import * as d3 from 'd3';
 
@@ -25,7 +25,9 @@
             []
         );
 
-    let flattened_res = flatten(res)
+    let flattened_res = flatten(res).map((d)=> {
+        return {...d, 
+            is_selected:"active"}})
 
     // unique list of mods
     let unique_mods = [...new Set(flattened_res.map(item => item.modifications))]; 
@@ -52,21 +54,14 @@
 
     let col = scaleOrdinal()
         .domain(unique_types)
-        .range(['#000000', '#000075', '#4363d8', '#469990', '#dcbeff', '#800000', '#911eb4', '#fabed4', '#42d4f4'])
+        .range(['#d5e5ed', 'lightgrey', '#fabed4', '#dcbeff', '#469990', '#e41a1c', '#911eb4', '#4363d8', '#a65628'])
 
     let legTitles = col.domain()
 
     let xAxis;
 	let yAxis;
-	
-	$: {
-		d3.select(yAxis)
-            .call(d3.axisLeft(yScale));
-		
-		d3.select(xAxis)
-            .call(d3.axisTop(xScale))
-            .selectAll('.tick > text');
-	}
+    let yAxis_A;
+    let yAxis_No;
 
     let selected_dp = undefined;
 
@@ -76,8 +71,91 @@
         mouse_y = event.clientY;
     } 
 
-    function test() {
-        console.log('hello')
+    function handleMouseover(lt) {
+        let element = document.querySelectorAll(`circle:not(.${CSS.escape(lt)})`)
+        element.classList.add("inactive");
+    }
+
+    function handleMouseout () {
+        let element = document.querySelectorAll(`inactive`)
+        element.classList.remove("inactive");
+    }
+
+    let isActive = true;
+
+    let AWidth = 400;
+    let AHeight = 300;
+    let AInnerheight = AHeight / 2 - margin.top
+
+    let artefact = flattened_res.filter(function (el) {
+        return el.type == "Artefact"
+    });
+
+    let artefact_counts = artefact.reduce((p, c) => {
+        var name = c.pos;
+        if (!p.hasOwnProperty(name)) {
+            p[name] = 0;
+        }
+        p[name]++;
+        return p;
+    }, {});
+
+    let not_artefact = flattened_res.filter(function (el) {
+        return el.type != "Artefact"
+    });
+
+    let not_artefact_counts = not_artefact.reduce((p, c) => {
+        let name = c.pos;
+        if (!p.hasOwnProperty(name)) {
+            p[name] = 0;
+        }
+        p[name]++;
+        return p;
+    }, {});
+
+    var countsExtended_A = Object.keys(artefact_counts).map(k => {
+    return {name: k, count: artefact_counts[k]}; });
+
+    var countsExtended_No = Object.keys(not_artefact_counts).map(k => {
+    return {name: k, count: not_artefact_counts[k]}; });
+
+    let yextentA = extent(countsExtended_A);
+    let yscaleA = scaleLinear().domain(yextentA).range(AInnerheight)
+
+    let yextentNo = extent(countsExtended_No);
+    let yscaleNo = scaleLinear().domain(yextentNo).range(AInnerheight)
+
+    $: {
+		d3.select(yAxis)
+            .call(d3.axisLeft(yScale));
+		
+		d3.select(xAxis)
+            .call(d3.axisTop(xScale))
+            .selectAll('.tick > text');
+
+        d3.select(yAxis_A)
+            .call(d3.axisLeft(yscaleA));
+
+        d3.select(yAxis_No)
+            .call(d3.axisLeft(yscaleNo));
+	}
+
+    function handleMouseOver(event, item){
+        console.log(item)
+
+        flattened_res.map((d)=> {
+          if (d.type==item) {
+            d.is_selected = "active"
+            console.log(d.type, item)
+            
+        } else {
+            d.is_selected = "inactive"
+ 
+        }})}
+    
+    function handleMouseOut() {
+        flattened_res.map((d)=> {
+            return {...d, is_selected:"active"}})
     }
 
 </script>
@@ -88,27 +166,49 @@
     <div class="item"><span>Function:</span> {p.function}</div>
     <br/>
     <div class="leg">
-
         <div class=leg-title>
             {#each legTitles as lt}
-                <div class="leg-wrapper"
+                <!-- svelte-ignore a11y-mouse-events-have-key-events -->
+                <div>
+                    <span class="leg-item {lt}"
+                          class:class-on-hover={isActive} on:mouseover={(e) => handleMouseOver(e, lt)} 
+                                                           on:mouseout={() => handleMouseOut()}
+                          style="background-color:{col(lt)};"    
                     >
-                    <!-- svelte-ignore a11y-mouse-events-have-key-events -->
-                    <span   class="leg-item"
-                            style="background-color:{col(lt)};"
-                            on:mouseover={test()}
-                            >
-
-                            {lt} 
+                        {lt} 
                     </span>
-                </div>
+                </div><br/>
             {/each}
         </div>
 
     </div>
 
-    <!-- <Scatter2 data={data}/> -->
+    <br/>
+    <br/>
+
+    <svg height={AHeight}, width={AWidth}>
+        <g class="x-axis" transform="translate({margin.left}, {AHeight / 2})"
+		 bind:this={xAxis} />
+
+        <g class="y-axis" transform="translate({margin.left - 20}, {margin.top})"
+            bind:this={yAxis_A} />
+
+        <g class="y-axis" transform="translate({margin.left - 20}, {margin.top})"
+            bind:this={yAxis_No} />
+
+        <g class="rects" width={innerWidth} height={AInnerheight} 
+            transform='translate({margin.left}, {margin.top+8})'>
+            {#each countsExtended_A as count, i}
+                <line x1={i} y1=0 
+                      x2={i} y2={yAxis_No(count)} 
+                      stroke = "black"/>
+            {/each}
+        </g>
+    </svg> 
 </div>
+
+<div class="x-axis-sticky" transform="translate({margin.left}, {margin.top / 2})"
+    bind:this={xAxis}/>
 
 <svg {width} {height}>
 
@@ -127,7 +227,8 @@
                                       selected_dp && point.pos == selected_dp.pos  }"
                     cx={xScale(point.pos)} 
                     cy={yScale(point.modifications)} 
-                    fill = {col(point.type)}
+                    fill = {point.is_selected == "active" ? col(point.type) : "lightgrey"}
+                
                     r='7'
                     on:mouseover={function(event) {selected_dp = point; setMousePosition(event)}} 
                     on:mouseout={function() {selected_dp = undefined}} 
@@ -152,7 +253,7 @@
 
 <style>
     .metadata{
-        width: 25%;
+        width: 33%;
         font-family: sans-serif;
         font-size: 14pt;
         margin-left: 40px;
@@ -184,14 +285,14 @@
         -webkit-box-decoration-break: clone;
         box-decoration-break: clone;
         padding: 0 5px 0 5px;
-    }
-
-    .leg-wrapper {
         margin-bottom: 5px;
     }
 
-    .x-axis{
+    .x-axis-sticky {
         position: sticky;
+        width: 1000;
+        height: 3500;
+        float: right;
     }
 
     #tooltip {                                     
@@ -213,7 +314,7 @@
     }
 
     circle.selected {
-        fill-opacity: 1;
+        opacity: 100%;
         stroke: black;
     }
 
@@ -221,5 +322,8 @@
         fill: lightgray;
     }
 
+    .span {
+        margin-bottom: 20;
+    }
 
 </style>

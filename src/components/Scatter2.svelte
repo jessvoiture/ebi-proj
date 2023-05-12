@@ -12,6 +12,10 @@
 
     export let data;
 
+    // let p = data.points;
+    // let res = p.residues;
+    // let pos = res.map(d => d.pos)
+
     const f = format('.2f');
 
     let binCount = 40;
@@ -23,8 +27,8 @@
 
     $: steps = calcThresholds(domain, binCount);
     $: hist = bin()
-    .domain(domain)
-    .thresholds(steps);
+        .domain(domain)
+        .thresholds(steps);
 
     $: slimSteps = takeEvery(steps, 7);
 </script>
@@ -37,17 +41,16 @@
   expand to fill it.
 */
     .chart-container {
-        width: 100%;
-        height: 250px;
+        width: 500px;
+        height: 200px;
     }
 </style>
 
-<div class="input-container" style="position: absolute;right:10px;z-index: 9;">
+<div class="input-container">
     <div class="chart-container">
         <LayerCake
             ssr={true}
             percentRange={true}
-            padding={{ top: 20, right: 5, bottom: 20, left: 31 }}
             x={xKey}
             y={yKey}
             xDomain={steps}
